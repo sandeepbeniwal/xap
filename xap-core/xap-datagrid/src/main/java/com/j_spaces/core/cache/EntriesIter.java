@@ -73,6 +73,9 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
     private boolean _returnEntryCacheInfoOnly;
     private boolean _tryToUsePureIndexesBlobStore;
 
+    //for by-uid or by-uids count
+    private String[] _uids;
+    private int      _nextUidPos;
 
     private static final Random randomGenerator = new Random();
 
@@ -91,6 +94,23 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
 
         if (!template.isEmptyTemplate()) {
             _typeDesc = _cacheManager.getTypeManager().getTypeDesc(template.getClassName());
+        }
+
+        if (template.getUidToOperateBy() != null || template.getMultipleUids() != null)
+        {
+            if (template.getMultipleUids() != null)
+            {
+                _uids = template.getMultipleUids();
+            }
+            else
+            {
+                _uids = new String[1];
+                _uids[0] = template.getUidToOperateBy() ;
+            }
+            if (_cacheManager.isBlobStoreCachePolicy() && template.getCustomQuery() == null && template.isEmptyTemplate() )
+                setBringCacheInfoOnly(true);
+
+            return;
         }
 
 		/* [@author moran]
@@ -171,6 +191,10 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
 
     public IEntryHolder next()
             throws SAException {
+        if (_uids != null)
+            return next_by_uid();
+
+
         //FIFO++++++++++++++++++++++++++++++++++++++++++=
         if (_types == null)
             return null;
@@ -205,6 +229,47 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
 
         return saIterNext();
     }
+
+    public IEntryHolder next_by_uid()
+            throws SAException
+    {
+        _currentEntryCacheInfo = null;
+        _currentEntryHolder = null;
+        while (_nextUidPos < _uids.length)
+        {
+            String uid = _uids[_nextUidPos++];
+            IEntryCacheInfo pEntry = null;
+            IEntryHolder  eh = null;
+            if (isBringCacheInfoOnly()) {
+                pEntry = _cacheManager.getPEntryByUid(uid);
+                if (!invalidEntryCacheInfo(pEntry)) {
+                    eh = ((IBlobStoreRefCacheInfo) pEntry).getEntryHolderIfInMemory();
+                    if (eh != null && !match(eh))
+                        continue;
+
+                } else
+                    continue;
+            }
+            else
+            {
+                eh = _cacheManager.getEntry(_context,uid,_typeDesc != null ? _typeDesc.getTypeName() : null,_templateHolder,
+                        false/*tryinserttocache*/,false /*locked*/,false /*useOnlyCache*/);
+                if (eh != null && !eh.isDeleted())
+                {
+                    pEntry = _context.getEnteyCacheInfo();
+                    if (invalidEntry(pEntry, eh) || !match(eh))
+                        continue;
+                }
+                else
+                    continue;
+            }
+            _currentEntryCacheInfo = pEntry;
+            _currentEntryHolder = eh;
+            return _currentEntryHolder;
+        }
+        return null;
+    }
+
 
 
     public IEntryCacheInfo nextEntryCacheInfo()

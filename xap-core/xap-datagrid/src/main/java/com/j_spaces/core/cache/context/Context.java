@@ -246,6 +246,9 @@ public class Context {
     private Boolean _optimizedBlobStoreReadEnabled;
     private boolean _inInitialLoad;
 
+    //used in by-uid-getEntry
+    IEntryCacheInfo _entryCacheInfo;
+
     public Context() {
     }
 
@@ -474,6 +477,7 @@ public class Context {
         _owningThreadName = null;
         _optimizedBlobStoreReadEnabled = null;
         _inInitialLoad = false;
+        _entryCacheInfo = null;
     }
 
     /**
@@ -954,6 +958,15 @@ public class Context {
         return _originalBlobStoreVersion;
     }
 
+    public IEntryCacheInfo getEnteyCacheInfo()
+    {
+        return _entryCacheInfo;
+    }
+
+    public void setEntryCacheInfo(IEntryCacheInfo eci)
+    {
+        _entryCacheInfo = eci;
+    }
     /**
      * fills the template with the answer to be sent to the client. if template is in callbackmode
      * and main thread has returned then performs a callback to the client. <p/> this method MUST be
