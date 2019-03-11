@@ -237,30 +237,22 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
         _currentEntryHolder = null;
         while (_nextUidPos < _uids.length)
         {
+            //NOTE: get by uids is irrelevant for DB located entries
             String uid = _uids[_nextUidPos++];
             IEntryCacheInfo pEntry = null;
             IEntryHolder  eh = null;
+            pEntry = _cacheManager.getPEntryByUid(uid);
+            if (pEntry == null || invalidEntryCacheInfo(pEntry))
+                continue;
             if (isBringCacheInfoOnly()) {
-                pEntry = _cacheManager.getPEntryByUid(uid);
-                if (!invalidEntryCacheInfo(pEntry)) {
-                    eh = ((IBlobStoreRefCacheInfo) pEntry).getEntryHolderIfInMemory();
-                    if (eh != null && !match(eh))
-                        continue;
-
-                } else
+                eh = ((IBlobStoreRefCacheInfo) pEntry).getEntryHolderIfInMemory();
+                if (eh != null && !match(eh))
                     continue;
             }
             else
             {
-                eh = _cacheManager.getEntry(_context,uid,_typeDesc != null ? _typeDesc.getTypeName() : null,_templateHolder,
-                        false/*tryinserttocache*/,false /*locked*/,false /*useOnlyCache*/);
-                if (eh != null && !eh.isDeleted())
-                {
-                    pEntry = _context.getEnteyCacheInfo();
-                    if (invalidEntry(pEntry, eh) || !match(eh))
-                        continue;
-                }
-                else
+                eh = pEntry.getEntryHolder(_cacheManager,_context);
+                if (invalidEntry(pEntry, eh) || !match(eh))
                     continue;
             }
             _currentEntryCacheInfo = pEntry;
