@@ -70,7 +70,7 @@ public class UidsRange
      * @see com.j_spaces.jdbc.builder.range.Range#intersection(com.j_spaces.jdbc.builder.range.Range)
      */
     public Range intersection(Range range) {
-        if (range instanceof UidsRange)
+        if (range.isUidsRange())
             return intersectionUids((UidsRange)range);
         return range.intersection(this);
     }
