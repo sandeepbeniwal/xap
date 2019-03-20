@@ -32,6 +32,7 @@ import com.j_spaces.kernel.list.ScanUidsIterator;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -45,7 +46,6 @@ public class UidsIndexScanner  extends AbstractQueryIndex {
     private static final long serialVersionUID = 1L;
 
     private Set<String> _uids;
-//    private transient ConvertedObjectWrapper _convertedValueWrapper;
 
     public UidsIndexScanner() {
         super();
@@ -109,18 +109,31 @@ public class UidsIndexScanner  extends AbstractQueryIndex {
     public void readExternal(ObjectInput in) throws IOException,
             ClassNotFoundException {
         super.readExternal(in);
-
-        _uids = IOUtils.readObject(in);
+        _uids = new HashSet<String>();
+        int size = IOUtils.readInt(in);
+        for (int i = 0; i < size; i++)
+        {
+            _uids.add(IOUtils.readString(in));
+        }
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-
-        IOUtils.writeObject(out, _uids);
+        IOUtils.writeInt(out,_uids.size());
+        if (_uids.size() > 0)
+        {
+            for (String s : _uids)
+            {
+                IOUtils.writeString(out,s);
+            }
+        }
     }
 
     public boolean supportsTemplateIndex() {
         return false;
     }
+
+    @Override
+    public boolean  isUidsScanner() {return true;}
 }

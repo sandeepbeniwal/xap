@@ -37,13 +37,15 @@ import java.util.Set;
 public class ScanUidsIterator
         implements IScanListIterator<IEntryCacheInfo>{
 
-    private  String[]       _uids;
+    private static final int WEIGHT_GT_1 = 5;
+
+    private  Object[]       _uids;
     private  int            _nextPos;
     private  CacheManager    _cacheManager;
     private  IEntryCacheInfo _subject;
 
     public ScanUidsIterator(CacheManager    cacheManager,Set<String> uids) {
-        _uids = (String[])(uids.toArray());
+        _uids = uids.toArray();
         _cacheManager = cacheManager;
     }
 
@@ -53,7 +55,7 @@ public class ScanUidsIterator
     public boolean hasNext() {
         while(_nextPos < _uids.length)
         {
-            _subject = _cacheManager.getPEntryByUid(_uids[_nextPos++]);
+            _subject = _cacheManager.getPEntryByUid((String)(_uids[_nextPos++]));
             if (_subject != null)
                 return true;
         }
@@ -105,5 +107,8 @@ public class ScanUidsIterator
         throw new UnsupportedOperationException();
     }
 
-
+    public int  size()
+    {
+        return _uids.length > 1? ((_uids.length -1) * WEIGHT_GT_1 + 1) : _uids.length;
+    }
 }

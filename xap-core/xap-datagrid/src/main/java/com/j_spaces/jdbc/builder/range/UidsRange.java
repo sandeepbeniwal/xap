@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package com.j_spaces.jdbc.builder.range;
+import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.query.IQueryIndexScanner;
 import com.gigaspaces.internal.query.InValueIndexScanner;
@@ -27,6 +28,9 @@ import com.j_spaces.core.client.SQLQuery;
 import com.j_spaces.jdbc.SQLFunctions;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -216,4 +220,31 @@ public class UidsRange
 
     @Override
     public boolean isRelevantForAllIndexValuesOptimization() {return true;}
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException,
+            ClassNotFoundException {
+        super.readExternal(in);
+
+        _uids = new HashSet<String>();
+        int size = IOUtils.readInt(in);
+        for (int i = 0; i < size; i++)
+        {
+            _uids.add(IOUtils.readString(in));
+        }
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+        IOUtils.writeInt(out,_uids.size());
+        if (_uids.size() > 0)
+        {
+            for (String s : _uids)
+            {
+                IOUtils.writeString(out,s);
+            }
+        }
+    }
+
 }

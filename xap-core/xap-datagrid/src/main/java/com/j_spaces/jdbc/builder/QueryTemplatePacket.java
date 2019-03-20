@@ -426,6 +426,8 @@ public class QueryTemplatePacket extends ExternalTemplatePacket {
             for (Map.Entry<String, Range> mapEntry : _ranges.entrySet()) {
                 Range range = mapEntry.getValue();
 
+                if (!range.isInternalRange())
+                    customQueries.add(mapEntry.getValue());
 
                 if (possibleCompoundSegments != null && range.suitableAsCompoundIndexSegment())
                     possibleCompoundSegments.put(mapEntry.getKey(), range);
