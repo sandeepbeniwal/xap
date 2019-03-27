@@ -39,7 +39,7 @@ import java.util.Set;
  * Scans the entries according to the supplied uids
  *
  * @author Yechiel
- * @since 14.2
+ * @since 14.3
  */
 @com.gigaspaces.api.InternalApi
 public class UidsIndexScanner  extends AbstractQueryIndex {
@@ -110,22 +110,22 @@ public class UidsIndexScanner  extends AbstractQueryIndex {
             ClassNotFoundException {
         super.readExternal(in);
         _uids = new HashSet<String>();
-        int size = IOUtils.readInt(in);
+        int size = in.readInt();
         for (int i = 0; i < size; i++)
         {
-            _uids.add(IOUtils.readString(in));
+            _uids.add(in.readUTF());
         }
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-        IOUtils.writeInt(out,_uids.size());
+        out.writeInt(_uids.size());
         if (_uids.size() > 0)
         {
             for (String s : _uids)
             {
-                IOUtils.writeString(out,s);
+                out.writeUTF(s);
             }
         }
     }

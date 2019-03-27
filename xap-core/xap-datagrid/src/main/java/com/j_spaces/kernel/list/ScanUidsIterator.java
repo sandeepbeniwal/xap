@@ -27,7 +27,7 @@ import java.util.Set;
  *
  * @author Yechiel Fefer
  * @version 1.0
- * @since 14.2
+ * @since 14.3
  */
 /*
  * scan iterator for a list of uids

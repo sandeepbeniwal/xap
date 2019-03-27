@@ -116,9 +116,10 @@ public class CompoundAndIndexScanner extends AbstractCompoundIndexScanner {
 
             //check the return type - can be iterator
             if (result != null && result.isIterator()) {
-                if (uidsIter != null)
+                boolean wasUids = uidsIter != null;
+                if (wasUids && !context.isIndicesIntersectionEnabled())
                     continue; //uids iter wins over iters
-                if (queryIndex.isUidsScanner())
+                if (!wasUids && queryIndex.isUidsScanner())
                 {
                     uidsIter = (ScanUidsIterator)result;
                     uidsSize = uidsIter.size();
@@ -126,9 +127,11 @@ public class CompoundAndIndexScanner extends AbstractCompoundIndexScanner {
                 if (context.isIndicesIntersectionEnabled())
                     intersectedList = addToIntersectedList(context, intersectedList, result, template.isFifoTemplate(), false/*shortest*/, typeData);
 
-                shortestExtendedIndexMatch = (IScanListIterator<IEntryCacheInfo>) result;
-                if(isExplainPlan){
-                    shortestIndexName = queryIndex.getIndexName();
+                if (!wasUids) {
+                    shortestExtendedIndexMatch = (IScanListIterator<IEntryCacheInfo>) result;
+                    if (isExplainPlan) {
+                        shortestIndexName = queryIndex.getIndexName();
+                    }
                 }
                 continue;
             }

@@ -593,22 +593,6 @@ public class QueryTemplatePacket extends ExternalTemplatePacket {
         _multipleUids.retainAll(template.getMultipleUids());
     }
 
-    protected void unionUids(QueryTemplatePacket template) {
-        // merge the uids
-        if (template.getMultipleUids() != null) {
-            if (_multipleUids == null)
-                _multipleUids = template.getMultipleUids();
-            else
-                _multipleUids.addAll(template.getMultipleUids());
-        }
-        //merge single uid
-        else if (template.getUID() != null) {
-            if (_multipleUids == null)
-                _multipleUids = new HashSet<String>();
-            _multipleUids.add(template.getUID());
-        }
-    }
-
     /**
      * Merge given templates into one template. If merge fails - the templates are attached to the
      * original exp nodes

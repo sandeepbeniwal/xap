@@ -4573,6 +4573,8 @@ public class CacheManager extends AbstractCacheManager
 
                             if (context.isIndicesIntersectionEnabled())
                                 intersectedList = addToIntersectedList(context, intersectedList, resultOIS, template.isFifoTemplate(), false/*shortest*/, entryType);
+                            if (uidsSize != Integer.MAX_VALUE)
+                                resultOIS = originalOIS;
                         }
                         break; //evaluate
                 }//switch
@@ -4599,7 +4601,7 @@ public class CacheManager extends AbstractCacheManager
             return resultOIS;
         }
 
-        if (resultOIS == null || (resultSL.size() < entryType.getEntries().size() && (uidsSize == Integer.MAX_VALUE || resultSL.size() < uidsSize))) {
+        if (resultOIS == null || (resultSL.size() < entryType.getEntries().size() && (uidsSize == Integer.MAX_VALUE || resultSL.size() <= uidsSize))) {
             if (_logger.isLoggable(Level.FINEST))
                 logSearchCompoundSelection(entryType, resultSL, compound_selection, compound_name);
             if (context.isIndicesIntersectionEnabled()) {

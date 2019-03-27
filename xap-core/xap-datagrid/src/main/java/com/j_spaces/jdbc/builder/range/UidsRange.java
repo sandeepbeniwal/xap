@@ -41,7 +41,7 @@ import static com.j_spaces.sadapter.datasource.DefaultSQLQueryBuilder.BIND_PARAM
  * Represents a set of uids to match against the candidates
  *
  * @author Yechiel
- * @since 14.2
+ * @since 14.3
  */
 @com.gigaspaces.api.InternalApi
 public class UidsRange
@@ -225,24 +225,23 @@ public class UidsRange
     public void readExternal(ObjectInput in) throws IOException,
             ClassNotFoundException {
         super.readExternal(in);
-
         _uids = new HashSet<String>();
-        int size = IOUtils.readInt(in);
+        int size = in.readInt();
         for (int i = 0; i < size; i++)
         {
-            _uids.add(IOUtils.readString(in));
+            _uids.add(in.readUTF());
         }
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-        IOUtils.writeInt(out,_uids.size());
+        out.writeInt(_uids.size());
         if (_uids.size() > 0)
         {
             for (String s : _uids)
             {
-                IOUtils.writeString(out,s);
+                out.writeUTF(s);
             }
         }
     }
