@@ -57,7 +57,6 @@ public class InRange
     }
 
     public InRange(String colName, Set inValues) {
-
         this(colName, null, inValues);
     }
 
@@ -69,7 +68,6 @@ public class InRange
      * @see com.j_spaces.jdbc.builder.range.Range#intersection(com.j_spaces.jdbc.builder.range.Range)
      */
     public Range intersection(Range range) {
-
         return range.intersection(this);
     }
 
@@ -77,7 +75,6 @@ public class InRange
      * @see com.j_spaces.jdbc.builder.range.Range#intersection(com.j_spaces.jdbc.builder.range.SegmentRange)
      */
     public Range intersection(SegmentRange range) {
-
         return range.intersection(this);
     }
 

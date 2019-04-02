@@ -48,7 +48,7 @@ public class UidsRange
         extends Range {
     // serialVersionUID should never be changed.
     private static final long serialVersionUID = 1L;
-    private Set<String>  _uids;
+    private transient Set<String>  _uids;
 
     /**
      * @return the value
@@ -225,25 +225,11 @@ public class UidsRange
     public void readExternal(ObjectInput in) throws IOException,
             ClassNotFoundException {
         super.readExternal(in);
-        _uids = new HashSet<String>();
-        int size = in.readInt();
-        for (int i = 0; i < size; i++)
-        {
-            _uids.add(in.readUTF());
-        }
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-        out.writeInt(_uids.size());
-        if (_uids.size() > 0)
-        {
-            for (String s : _uids)
-            {
-                out.writeUTF(s);
-            }
-        }
     }
 
 }
