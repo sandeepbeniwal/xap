@@ -2170,6 +2170,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         _engine.closeServerIterator(uuid);
     }
 
+    public void renewServerIteratorLease(UUID uuid){
+        _engine.renewServerIteratorLease(uuid);
+    }
+
     public IEntryPacket[] readMultiple(ITemplatePacket template, Transaction txn, boolean take,
                                        int maxEntries, SpaceContext sc, boolean returnOnlyUid, int modifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException {
