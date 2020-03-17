@@ -45,12 +45,9 @@ public class ServerIteratorsManager {
     public void closeServerIterator(UUID uuid){
         ServerIteratorInfo serverIteratorInfo = serverIteratorInfoMap.get(uuid);
         if(serverIteratorInfo != null){
-            synchronized (serverIteratorInfo.getLock()) {
-                if(!serverIteratorInfo.isActive())
-                    return;
+            if(serverIteratorInfo.tryDeactivateIterator()){
                 if (_logger.isLoggable(Level.FINE))
                     _logger.fine("Space iterator " + uuid + " was closed in server");
-                serverIteratorInfo.setActive(false);
                 serverIteratorInfoMap.remove(uuid, serverIteratorInfo);
             }
         }
@@ -60,12 +57,9 @@ public class ServerIteratorsManager {
         ServerIteratorInfo serverIteratorInfo = serverIteratorInfoMap.get(uuid);
         if(serverIteratorInfo == null)
             return null;
-        synchronized (serverIteratorInfo.getLock()){
-            if(!serverIteratorInfo.isActive())
-                return null;
-            serverIteratorInfo.renewLease();
-        }
-        return serverIteratorInfo;
+        if(serverIteratorInfo.tryRenewLease())
+            return serverIteratorInfo;
+        return null;
     }
 
     public Map<UUID, ServerIteratorInfo> getServerIteratorInfoMap() {
@@ -76,16 +70,11 @@ public class ServerIteratorsManager {
         int reapCount = 0;
         for(Map.Entry<UUID, ServerIteratorInfo> entry: serverIteratorInfoMap.entrySet()){
             ServerIteratorInfo serverIteratorInfo = entry.getValue();
-            if(serverIteratorInfo.isCandidateForExpiration()) {
-                synchronized(serverIteratorInfo.getLock()){
-                    if(serverIteratorInfo.isCandidateForExpiration()){
-                        if (_logger.isLoggable(Level.INFO))
-                            _logger.info("Space iterator " + serverIteratorInfo.getUuid() + " lease has expired in server");
-                        serverIteratorInfo.setActive(false);
-                        if (serverIteratorInfoMap.remove(entry.getKey(), entry.getValue())) {
-                            reapCount++;
-                        }
-                    }
+            if(serverIteratorInfo.tryExpireIterator()) {
+                if (_logger.isLoggable(Level.INFO))
+                    _logger.info("Space iterator " + serverIteratorInfo.getUuid() + " lease has expired in server");
+                if (serverIteratorInfoMap.remove(entry.getKey(), entry.getValue())) {
+                    reapCount++;
                 }
             }
         }

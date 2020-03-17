@@ -43,10 +43,6 @@ public class ServerIteratorInfo {
         return batchSize;
     }
 
-    public void renewLease(){
-        setExpirationTime(System.currentTimeMillis() + maxInactiveDuration);
-    }
-
     public IEntryPacket[] getStoredEntryPacketsBatch() {
         return storedEntryPacketsBatch;
     }
@@ -73,6 +69,7 @@ public class ServerIteratorInfo {
         this.active = active;
         return this;
     }
+
 
     private boolean isFirstTime(){
         return storedBatchNumber == 0;
@@ -102,8 +99,37 @@ public class ServerIteratorInfo {
         return this;
     }
 
-    public Object getLock(){
-        return lock;
+    public boolean tryDeactivateIterator(){
+        if(!isActive())
+            return false;
+        synchronized (lock){
+            if(!isActive())
+                return false;
+            setActive(false);
+            return true;
+        }
+    }
+
+    public boolean tryRenewLease(){
+        synchronized (lock){
+            if(!isActive())
+                return false;
+            setExpirationTime(System.currentTimeMillis() + maxInactiveDuration);
+            return true;
+        }
+    }
+
+    public boolean tryExpireIterator(){
+        if(isCandidateForExpiration()) {
+            synchronized(lock){
+                if(isCandidateForExpiration()){
+                    setActive(false);
+                    return true;
+                }
+                return false;
+            }
+        }
+        return false;
     }
 
     @Override
