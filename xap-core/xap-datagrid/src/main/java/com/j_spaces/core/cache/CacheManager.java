@@ -56,6 +56,7 @@ import com.gigaspaces.management.space.LocalCacheDetails;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.index.CompoundIndex;
 import com.gigaspaces.metadata.index.ISpaceCompoundIndexSegment;
+import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.metrics.Gauge;
 import com.gigaspaces.metrics.MetricConstants;
 import com.gigaspaces.metrics.MetricRegistrator;
@@ -103,15 +104,14 @@ import com.j_spaces.kernel.list.*;
 import com.j_spaces.kernel.locks.*;
 import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.space.InternalSpaceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Engine.UPDATE_NO_LEASE;
@@ -5453,6 +5453,22 @@ public class CacheManager extends AbstractCacheManager
             }
         }
 
+        private void registerTypeIndexMetrics(MetricRegistrator registrator, IServerTypeDesc serverTypeDesc/*TypeData oldTypeData, TypeData newTypeData*/) {
+
+            String typeName = serverTypeDesc.getTypeName();
+            ITypeDesc typeDesc = serverTypeDesc.getTypeDesc();
+            Map<String, SpaceIndex> indexes = typeDesc.getIndexes();
+            _logger.info( "TypeName:"  + typeName + ", indexes=" + indexes);
+            if( indexes != null && !indexes.isEmpty() ) {
+                Set<String> keys = indexes.keySet();
+                for (String index : keys) {
+                    _logger.info(">>> index=" + index);
+
+                    registerIndexRelatedMetrics(registrator, typeName, index);
+                }
+            }
+        }
+
         private void registerTypeMetrics(final IServerTypeDesc serverTypeDesc) {
             short typeDescCode = serverTypeDesc.getServerTypeDescCode();
             final String typeName = serverTypeDesc.getTypeName();
@@ -5472,7 +5488,7 @@ public class CacheManager extends AbstractCacheManager
             });
 
             if( !typeName.equals(IServerTypeDesc.ROOT_TYPE_NAME) ) {
-                _engine.getDataTypeReadCountMetricRegistrator(typeName).register(registrator.toPath("data", "read-count"), new Gauge<Long>() {
+                _engine.getDataTypeMetricRegistrator(typeName).register(registrator.toPath("data", "read-count"), new Gauge<Long>() {
                     @Override
                     public Long getValue() throws Exception {
                         SpaceImpl spaceImpl = getEngine().getSpaceImpl();
@@ -5480,6 +5496,15 @@ public class CacheManager extends AbstractCacheManager
                         return objectTypeReadCounts == null ? 0 : objectTypeReadCounts.longValue();
                     }
                 });
+
+                _engine.getDataTypeMetricRegistrator(typeName).register(registrator.toPath("data", "entries"), new Gauge<Integer>() {
+                    @Override
+                    public Integer getValue() throws Exception {
+                        return getNumberOfEntries(typeName, true);
+                    }
+                });
+
+                registerTypeIndexMetrics( registrator, serverTypeDesc );
             }
 
             if (!typeName.equals(IServerTypeDesc.ROOT_TYPE_NAME) && isBlobStoreCachePolicy()) {
@@ -5490,12 +5515,53 @@ public class CacheManager extends AbstractCacheManager
             }
         }
 
+        private void registerIndexRelatedMetrics( final MetricRegistrator registrator, String typeName, String index ){
+
+            _engine.getDataTypeMetricRegistrator(typeName, index).register(registrator.toPath("data", "index-hit-total"), new Gauge<Long>() {
+                @Override
+                public Long getValue() throws Exception {
+                    SpaceImpl spaceImpl = getEngine().getSpaceImpl();
+                    LongAdder objectTypeReadCounts = spaceImpl.getObjectTypeReadCounts(typeName);
+                    return objectTypeReadCounts == null ? 0 : objectTypeReadCounts.longValue()/10;
+                }
+            });
+
+            _engine.getDataTypeMetricRegistrator(typeName, index).register(registrator.toPath("data", "index-hit-delta"), new Gauge<Long>() {
+                @Override
+                public Long getValue() throws Exception {
+                    SpaceImpl spaceImpl = getEngine().getSpaceImpl();
+                    LongAdder objectTypeReadCounts = spaceImpl.getObjectTypeReadCounts(typeName);
+                    return objectTypeReadCounts == null ? 0 : objectTypeReadCounts.longValue()/100;
+                }
+            });
+        }
+
+        private void unregisterIndexRelatedMetrics( final MetricRegistrator registrator, String typeName, String index ){
+
+            _engine.getDataTypeMetricRegistrator( typeName, index ).unregisterByPrefix(registrator.toPath("data", "index-hit-total"));
+            _engine.getDataTypeMetricRegistrator( typeName, index ).unregisterByPrefix(registrator.toPath("data", "index-hit-delta"));
+        }
+
         private void unregisterTypeMetrics(final String typeName) {
             final String metricTypeName = typeName.equals(IServerTypeDesc.ROOT_TYPE_NAME) ? "total" : typeName;
             final MetricRegistrator registrator = _engine.getMetricRegistrator();
             registrator.unregisterByPrefix(registrator.toPath("data", "entries", metricTypeName));
             registrator.unregisterByPrefix(registrator.toPath("data", "notify-templates", metricTypeName));
-            _engine.getDataTypeReadCountMetricRegistrator( typeName ).unregisterByPrefix(registrator.toPath("data", "read-count"));
+            _engine.getDataTypeMetricRegistrator( typeName ).unregisterByPrefix(registrator.toPath("data", "read-count"));
+
+            IServerTypeDesc serverTypeDesc = _engine.getTypeTableEntry(typeName);
+            if( serverTypeDesc != null ){
+                //Map<String, SpaceIndex> indexes = classTypeInfo.getIndexes();
+                ITypeDesc typeDesc = serverTypeDesc.getTypeDesc();
+                Map<String, SpaceIndex> indexes = typeDesc.getIndexes();
+                if( indexes != null && !indexes.isEmpty() ) {
+                    for (String key : indexes.keySet()) {
+                        _logger.info(">>> before unregister key=" + key );
+                        unregisterIndexRelatedMetrics(registrator, typeName, key);
+                    }
+                }
+            }
+
             if (!typeName.equals(IServerTypeDesc.ROOT_TYPE_NAME) && isBlobStoreCachePolicy()) {
                 short typeDescCode = _typeManager.getServerTypeDesc(typeName).getServerTypeDescCode();
                 if (getBlobStoreStorageHandler().getOffHeapCache() != null) {
@@ -5510,6 +5576,8 @@ public class CacheManager extends AbstractCacheManager
             TypeData oldTypeData = _typeDataMap.get(serverTypeDesc);
             TypeData newTypeData = _typeDataFactory.createTypeDataOnDynamicIndexCreation(serverTypeDesc, oldTypeData, reason);
             _typeDataMap.put(serverTypeDesc, newTypeData);
+
+            //registerTypeIndexMetrics( oldTypeData, newTypeData );
 
             if (_logger.isDebugEnabled()) {
                 _logger.debug("replaced TypeData for type [" + serverTypeDesc.getTypeName() +
