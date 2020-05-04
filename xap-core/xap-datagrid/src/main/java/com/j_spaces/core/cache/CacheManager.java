@@ -5522,8 +5522,8 @@ public class CacheManager extends AbstractCacheManager
                 public Long getValue() throws Exception {
                     SpaceImpl spaceImpl = getEngine().getSpaceImpl();
                     LongAdder objectTypeReadCounts = spaceImpl.getObjectTypeReadCounts(typeName);
-
-                    return objectTypeReadCounts == null ? 0 : incr * ( objectTypeReadCounts.longValue() + 20 );
+                    incr ++;
+                    return objectTypeReadCounts == null ? 0 : index.length() * incr * ( objectTypeReadCounts.longValue() + 10 );
                 }
             });
         }
