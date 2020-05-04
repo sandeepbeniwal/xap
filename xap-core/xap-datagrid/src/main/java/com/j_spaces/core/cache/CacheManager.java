@@ -5522,25 +5522,13 @@ public class CacheManager extends AbstractCacheManager
                 public Long getValue() throws Exception {
                     SpaceImpl spaceImpl = getEngine().getSpaceImpl();
                     LongAdder objectTypeReadCounts = spaceImpl.getObjectTypeReadCounts(typeName);
-                    return objectTypeReadCounts == null ? 0 : objectTypeReadCounts.longValue()/10;
-                }
-            });
 
-            _engine.getDataTypeMetricRegistrator(typeName, index).register(registrator.toPath("data", "index-hit-delta"), new Gauge<Long>() {
-                @Override
-                public Long getValue() throws Exception {
-                    SpaceImpl spaceImpl = getEngine().getSpaceImpl();
-                    LongAdder objectTypeReadCounts = spaceImpl.getObjectTypeReadCounts(typeName);
-                    return objectTypeReadCounts == null ? 0 : objectTypeReadCounts.longValue()/100;
+                    return objectTypeReadCounts == null ? 0 : incr * ( objectTypeReadCounts.longValue() + 20 );
                 }
             });
         }
 
-        private void unregisterIndexRelatedMetrics( final MetricRegistrator registrator, String typeName, String index ){
-
-            _engine.getDataTypeMetricRegistrator( typeName, index ).unregisterByPrefix(registrator.toPath("data", "index-hit-total"));
-            _engine.getDataTypeMetricRegistrator( typeName, index ).unregisterByPrefix(registrator.toPath("data", "index-hit-delta"));
-        }
+        private int incr = 1;
 
         private void unregisterTypeMetrics(final String typeName) {
             final String metricTypeName = typeName.equals(IServerTypeDesc.ROOT_TYPE_NAME) ? "total" : typeName;
@@ -5557,7 +5545,7 @@ public class CacheManager extends AbstractCacheManager
                 if( indexes != null && !indexes.isEmpty() ) {
                     for (String key : indexes.keySet()) {
                         _logger.info(">>> before unregister key=" + key );
-                        unregisterIndexRelatedMetrics(registrator, typeName, key);
+                        _engine.getDataTypeMetricRegistrator( typeName, key ).unregisterByPrefix(registrator.toPath("data", "index-hit-total"));
                     }
                 }
             }
