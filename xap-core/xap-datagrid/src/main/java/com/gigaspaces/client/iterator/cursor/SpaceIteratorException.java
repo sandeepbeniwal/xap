@@ -47,7 +47,8 @@ public class SpaceIteratorException
             stringBuilder.append(e.toString());
             stringBuilder.append(",");
         }
-        stringBuilder.deleteCharAt(stringBuilder.lastIndexOf(","));
+        if(stringBuilder.lastIndexOf(",") != -1)
+            stringBuilder.deleteCharAt(stringBuilder.lastIndexOf(","));
         stringBuilder.append("]");
         return stringBuilder.toString();
     }

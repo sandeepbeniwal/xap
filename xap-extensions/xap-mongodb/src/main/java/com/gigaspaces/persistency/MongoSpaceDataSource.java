@@ -66,12 +66,16 @@ public class MongoSpaceDataSource extends SpaceDataSource {
         this.clusterInfo = clusterInfo;
     }
 
-    public void close() throws IOException {
+    public void close() {
 
         if (logger.isDebugEnabled())
             logger.debug("MongoSpaceDataSource.close()");
 
-        mongoClient.close();
+        try {
+            mongoClient.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
