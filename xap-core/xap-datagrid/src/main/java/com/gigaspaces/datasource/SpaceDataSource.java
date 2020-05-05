@@ -137,4 +137,8 @@ public abstract class SpaceDataSource {
         return true;
     }
 
+    public void close() {
+
+    }
+
 }
