@@ -123,6 +123,33 @@ public class ZookeeperChunksMapHandler implements Closeable {
         }
     }
 
+    public ChunksRoutingManager getChunksRoutingManager() {
+        try {
+            return toManager(attributeStore.getBytes(attributeStoreKey));
+        } catch (IOException e) {
+            if (logger.isErrorEnabled())
+                logger.error("Failed to get chunks manager", e);
+            throw new DirectPersistencyRecoveryException("Failed to start [" + (serviceName)
+                    + "] Failed to create attribute store.");
+        } catch (ClassNotFoundException e) {
+            if (logger.isErrorEnabled())
+                logger.error("Failed to get chunks manager", e);
+            throw new DirectPersistencyRecoveryException("Failed to start [" + (serviceName)
+                    + "] Failed deserialize chunks manager");
+        }
+    }
+
+    public void setRoutingManager(ChunksRoutingManager newManager) {
+        try {
+            attributeStore.setBytes(attributeStoreKey, toByteArray(newManager));
+        } catch (IOException e) {
+            if (logger.isErrorEnabled())
+                logger.error("Failed to get chunks manager", e);
+            throw new DirectPersistencyRecoveryException("Failed to start [" + (serviceName)
+                    + "] Failed to create attribute store.");
+        }
+    }
+
     public void setChunksMap(PartitionToChunksMap chunksMap) {
         try {
             ChunksRoutingManager manager = toManager(attributeStore.getBytes(attributeStoreKey));

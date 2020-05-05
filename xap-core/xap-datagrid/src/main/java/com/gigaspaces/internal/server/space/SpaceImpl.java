@@ -45,6 +45,7 @@ import com.gigaspaces.internal.client.spaceproxy.SpaceProxyImpl;
 import com.gigaspaces.internal.client.spaceproxy.executors.SystemTask;
 import com.gigaspaces.internal.client.spaceproxy.operations.SpaceConnectRequest;
 import com.gigaspaces.internal.client.spaceproxy.operations.SpaceConnectResult;
+import com.gigaspaces.internal.cluster.PartitionToChunksMap;
 import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.DirectPersistencyBackupSyncIteratorHandler;
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.DirectPersistencySyncListBatch;
@@ -3823,4 +3824,14 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         _quiesceHandler.removeSpaceSuspendTypeListener(listener);
     }
 
+    @Override
+    public void updateChunksMap() {
+        if (useZooKeeper() && GsEnv.propertyBoolean(SystemProperties.CHUNKS_SPACE_ROUTING).get(true)) {
+            PartitionToChunksMap newMap = zookeeperChunksMapHandler.getChunksMap();
+            this._clusterInfo.setChunksMap(newMap);
+            this._clusterInfo.setNumOfPartitions(newMap.getNumOfPartitions());
+        } else {
+            throw new IllegalStateException("Nothing to update, CHUNKS_SPACE_ROUTING is disabled");
+        }
+    }
 }

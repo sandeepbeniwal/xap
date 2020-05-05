@@ -133,4 +133,12 @@ public class PartitionToChunksMap implements Externalizable {
             partitionsToChunksMap.put(key, set);
         }
     }
+
+    public Map<Integer, Set<Integer>> getPartitionsToChunksMap() {
+        return partitionsToChunksMap;
+    }
+
+    public Map<Integer, Integer> getChunksToPartitionMap() {
+        return chunksToPartitionMap;
+    }
 }
