@@ -429,7 +429,7 @@ public class JSpaceAdminProxy
     }
 
     @Override
-    public void updateChunksMap() {
+    public void updateChunksMap() throws RemoteException {
         ((IInternalRemoteJSpaceAdmin) adminImpl).updateChunksMap();
     }
 }

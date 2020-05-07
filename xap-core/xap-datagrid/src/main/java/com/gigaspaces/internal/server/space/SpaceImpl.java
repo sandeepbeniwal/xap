@@ -182,6 +182,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.rmi.RemoteException;
@@ -210,7 +212,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     private final JSpaceAttributes _jspaceAttr;
     private final Properties _customProperties;
     private final ClusterPolicy _clusterPolicy;
-    private final SpaceClusterInfo _clusterInfo;
     private final boolean _secondary;
 
     private final String _instanceId;
@@ -238,6 +239,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     private final DemoteHandler _demoteHandler;
     private final HttpServer _httpServer;
 
+    private SpaceClusterInfo _clusterInfo;
     private SpaceConfig _spaceConfig;
     private SpaceEngine _engine;
     private SpaceProxyImpl _embeddedProxy;
@@ -3825,11 +3827,23 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     }
 
     @Override
-    public void updateChunksMap() {
+    public void updateChunksMap() throws RemoteException {
         if (useZooKeeper() && GsEnv.propertyBoolean(SystemProperties.CHUNKS_SPACE_ROUTING).get(true)) {
-            PartitionToChunksMap newMap = zookeeperChunksMapHandler.getChunksMap();
-            this._clusterInfo.setChunksMap(newMap);
-            this._clusterInfo.setNumOfPartitions(newMap.getNumOfPartitions());
+            synchronized (this){
+                PartitionToChunksMap newMap = zookeeperChunksMapHandler.getChunksMap();
+                this._clusterInfo = this._clusterInfo.cloneAndUpdate(newMap);
+                this._spaceConfig.setClusterInfo(this._clusterInfo);
+                this._taskProxy.updateProxyRouter(_taskProxy.getProxyRouter(),newMap);
+                ISpaceFilter filter = this._engine.getFilterManager().getFilterObject("InjectionExecutorFilter");
+                Method setter;
+                try {
+                    setter = filter.getClass().getMethod("updateSpace", IJSpace.class);
+                    setter.invoke(filter, ((IJSpace) this._taskProxy));
+                } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                    throw  new RuntimeException(e);
+                }
+
+            }
         } else {
             throw new IllegalStateException("Nothing to update, CHUNKS_SPACE_ROUTING is disabled");
         }

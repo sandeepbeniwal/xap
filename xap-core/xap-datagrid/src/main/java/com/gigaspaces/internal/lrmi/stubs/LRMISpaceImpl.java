@@ -649,7 +649,7 @@ public class LRMISpaceImpl extends RemoteStub<IRemoteSpace>
     }
 
     @Override
-    public void updateChunksMap() {
+    public void updateChunksMap() throws RemoteException {
         ((IInternalRemoteJSpaceAdmin) getProxy()).updateChunksMap();
     }
 }
