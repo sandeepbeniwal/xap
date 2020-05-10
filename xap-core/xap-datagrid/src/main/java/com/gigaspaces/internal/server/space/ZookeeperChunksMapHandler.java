@@ -71,7 +71,10 @@ public class ZookeeperChunksMapHandler implements Closeable {
     }
 
     private ChunksRoutingManager toManager(byte[] bytes) throws IOException, ClassNotFoundException {
-        return IOUtils.readObject(new ObjectInputStream(new ByteArrayInputStream(bytes)));
+        if(bytes != null && bytes.length != 0) {
+            return IOUtils.readObject(new ObjectInputStream(new ByteArrayInputStream(bytes)));
+        }
+        return null;
     }
 
     private byte[] toByteArray(ChunksRoutingManager chunksRoutingManager) throws IOException {
@@ -83,8 +86,7 @@ public class ZookeeperChunksMapHandler implements Closeable {
 
     public void addListener(SpaceConfig spaceConfig) {
         zookeeperClient = createZooKeeperClient(spaceConfig);
-        int currentGen = this.getChunksMap().getGeneration();
-        zookeeperClient.addConnectionStateListener(new ReconnectTask(currentGen, spaceConfig), singleThreadExecutorService);
+        zookeeperClient.addConnectionStateListener(new ReconnectTask(spaceConfig), singleThreadExecutorService);
     }
 
     PartitionToChunksMap initChunksMap(int numberOfPartitions) throws ChunksMapMissingException {
@@ -170,6 +172,11 @@ public class ZookeeperChunksMapHandler implements Closeable {
     public void close() throws IOException {
         try {
             if (zookeeperClient != null) {
+                try{
+                    attributeStore.remove(attributeStoreKey);
+                }catch (Exception e){
+                    logger.warn("Failed to delete "+attributeStore, e);
+                }
                 singleThreadExecutorService.shutdownNow();
                 zookeeperClient.close();
             }
@@ -180,12 +187,10 @@ public class ZookeeperChunksMapHandler implements Closeable {
 
     public class ReconnectTask implements Runnable {
 
-        private int currentGeneration;
         private SpaceConfig spaceConfig;
         private Logger logger = LoggerFactory.getLogger(Constants.LOGGER_ZOOKEEPER);
 
-        ReconnectTask(int currentGeneration, SpaceConfig spaceConfig) {
-            this.currentGeneration = currentGeneration;
+        ReconnectTask(SpaceConfig spaceConfig) {
             this.spaceConfig = spaceConfig;
         }
 
@@ -193,10 +198,10 @@ public class ZookeeperChunksMapHandler implements Closeable {
         public void run() {
             PartitionToChunksMap map;
             map = getChunksMap();
-            if (map.getGeneration() > this.currentGeneration) {
-                logger.warn(spaceConfig.getContainerName() + " is at chunks map generation " + this.currentGeneration + " but current generation in Zookeeper is " + map.getGeneration());
+            int currentGeneration = spaceConfig.getClusterInfo().getChunksMap().getGeneration();
+            if (map.getGeneration() > currentGeneration) {
+                logger.warn(spaceConfig.getContainerName() + " is at chunks map generation " + currentGeneration + " but current generation in Zookeeper is " + map.getGeneration());
                 spaceConfig.getClusterInfo().setChunksMap(map);
-                this.currentGeneration = map.getGeneration();
             }
         }
     }
