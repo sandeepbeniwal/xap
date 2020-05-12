@@ -71,7 +71,7 @@ public class ZookeeperChunksMapHandler implements Closeable {
     }
 
     private ChunksRoutingManager toManager(byte[] bytes) throws IOException, ClassNotFoundException {
-        if(bytes != null && bytes.length != 0) {
+        if (bytes != null && bytes.length != 0) {
             return IOUtils.readObject(new ObjectInputStream(new ByteArrayInputStream(bytes)));
         }
         return null;
@@ -125,6 +125,22 @@ public class ZookeeperChunksMapHandler implements Closeable {
         }
     }
 
+    public void setChunksMap(PartitionToChunksMap chunksMap) {
+        try {
+            ChunksRoutingManager manager = toManager(attributeStore.getBytes(attributeStoreKey));
+            manager.addNewMap(chunksMap);
+            attributeStore.setBytes(attributeStoreKey, toByteArray(manager));
+        } catch (IOException e) {
+            if (logger.isErrorEnabled())
+                logger.error("Failed to get chunks manager", e);
+            throw new DirectPersistencyRecoveryException("Failed to start [" + (serviceName)
+                    + "] Failed to create attribute store.");
+        } catch (ClassNotFoundException e) {
+            if (logger.isErrorEnabled())
+                logger.error("Failed to get chunks manager", e);
+        }
+    }
+
     public ChunksRoutingManager getChunksRoutingManager() {
         try {
             return toManager(attributeStore.getBytes(attributeStoreKey));
@@ -152,37 +168,23 @@ public class ZookeeperChunksMapHandler implements Closeable {
         }
     }
 
-    public void setChunksMap(PartitionToChunksMap chunksMap) {
-        try {
-            ChunksRoutingManager manager = toManager(attributeStore.getBytes(attributeStoreKey));
-            manager.addNewMap(chunksMap);
-            attributeStore.setBytes(attributeStoreKey, toByteArray(manager));
-        } catch (IOException e) {
-            if (logger.isErrorEnabled())
-                logger.error("Failed to get chunks manager", e);
-            throw new DirectPersistencyRecoveryException("Failed to start [" + (serviceName)
-                    + "] Failed to create attribute store.");
-        } catch (ClassNotFoundException e) {
-            if (logger.isErrorEnabled())
-                logger.error("Failed to get chunks manager", e);
-        }
-    }
-
     @Override
     public void close() throws IOException {
         try {
             if (zookeeperClient != null) {
-                //TODO- need to make sure this doesnt happen on scale in instance termination
-//                try{
-//                    attributeStore.remove(attributeStoreKey);
-//                }catch (Exception e){
-//                    logger.warn("Failed to delete "+attributeStore, e);
-//                }
                 singleThreadExecutorService.shutdownNow();
                 zookeeperClient.close();
             }
         } catch (Exception e) {
             logger.warn("Failed to close ZookeeperClient", e);
+        }
+    }
+
+    void removePath() {
+        try {
+            attributeStore.remove(attributeStoreKey);
+        } catch (Exception e) {
+            logger.warn("Failed to delete " + attributeStore, e);
         }
     }
 

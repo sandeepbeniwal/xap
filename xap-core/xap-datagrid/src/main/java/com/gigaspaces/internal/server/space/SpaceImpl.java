@@ -727,6 +727,14 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             }
 
             if (zookeeperChunksMapHandler != null) {
+                //TODO- need to make sure this doesnt happen on scale in instance termination
+                try{
+                    if(!this._quiesceHandler.isQuiesced()) {
+                        zookeeperChunksMapHandler.removePath();
+                    }
+                }catch (Exception e){
+                    _logger.warn("Failed to delete "+attributeStore, e);
+                }
                 zookeeperChunksMapHandler.close();
             }
 
