@@ -172,11 +172,12 @@ public class ZookeeperChunksMapHandler implements Closeable {
     public void close() throws IOException {
         try {
             if (zookeeperClient != null) {
-                try{
-                    attributeStore.remove(attributeStoreKey);
-                }catch (Exception e){
-                    logger.warn("Failed to delete "+attributeStore, e);
-                }
+                //TODO- need to make sure this doesnt happen on scale in instance termination
+//                try{
+//                    attributeStore.remove(attributeStoreKey);
+//                }catch (Exception e){
+//                    logger.warn("Failed to delete "+attributeStore, e);
+//                }
                 singleThreadExecutorService.shutdownNow();
                 zookeeperClient.close();
             }

@@ -150,7 +150,7 @@ public class SpaceClusterInfo implements Externalizable {
         newClusterInfo.numOfPartitions = newChunksMap.getNumOfPartitions();
         newClusterInfo.partitions = generatePartitionsInfo(newClusterInfo.clusterName, newClusterInfo.numOfPartitions, newClusterInfo.numOfBackups);
         newClusterInfo.membersNames = new ArrayList<>();
-        for (SpaceClusterPartitionInfo partition : partitions) {
+        for (SpaceClusterPartitionInfo partition : newClusterInfo.partitions) {
             newClusterInfo.membersNames.addAll(partition.members);
         }
         return newClusterInfo;

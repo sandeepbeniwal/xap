@@ -17,12 +17,23 @@ public class ScalePlan implements Externalizable {
     public ScalePlan() {
     }
 
-    public ScalePlan(PartitionToChunksMap currentMap, int factor) {
+    public void initScaleOutPlan(PartitionToChunksMap currentMap, int factor) {
         this.currentMap = currentMap;
         this.plans = new HashMap<>(currentMap.getNumOfPartitions());
         for (int i = 1; i <= currentMap.getNumOfPartitions(); i++) {
             this.plans.put(i, new HashMap<>(factor));
             for (int j = currentMap.getNumOfPartitions() + 1; j <= currentMap.getNumOfPartitions() + factor; j++) {
+                this.plans.get(i).put(j, new HashSet<>());
+            }
+        }
+    }
+
+    public void initScaleInPlan(PartitionToChunksMap currentMap, int factor) {
+        this.currentMap = currentMap;
+        this.plans = new HashMap<>(currentMap.getNumOfPartitions());
+        for (int i = currentMap.getNumOfPartitions(); i > currentMap.getNumOfPartitions() - factor; i--) {
+            this.plans.put(i, new HashMap<>(factor));
+            for (int j = 1; j <= currentMap.getNumOfPartitions() - factor; j++) {
                 this.plans.get(i).put(j, new HashSet<>());
             }
         }
