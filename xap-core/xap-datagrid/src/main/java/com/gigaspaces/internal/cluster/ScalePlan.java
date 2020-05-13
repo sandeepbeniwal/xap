@@ -64,6 +64,19 @@ public class ScalePlan implements Externalizable {
     }
 
     @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("ScalePlan: \n");
+        for (Map.Entry<Integer, Map<Integer, Set<Integer>>> partitionPlan : plans.entrySet()) {
+            sb.append("Partition ").append(partitionPlan.getKey()).append(":");
+            for (Map.Entry<Integer, Set<Integer>> copyPlan : partitionPlan.getValue().entrySet()) {
+                sb.append("\t\n").append("move ").append(copyPlan.getValue().size()).append(" entries to partition ").append(copyPlan.getKey());
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, currentMap);
         IOUtils.writeObject(out, newMap);
