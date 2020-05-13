@@ -59,16 +59,21 @@ public class PatcherSpaceDataSource extends SpaceDataSource{
 
         @Override
         public void close() {
-            dataIterator.close();
+            if(dataIterator != null)
+                dataIterator.close();
         }
 
         @Override
         public boolean hasNext() {
-            return dataIterator.hasNext();
+            if(dataIterator != null)
+                return dataIterator.hasNext();
+            return false;
         }
 
         @Override
         public T next() {
+            if(dataIterator == null)
+                return null;
             try {
                 return (T) patcher.patch(dataIterator.next());
             } catch (ClassNotFoundException e) {
