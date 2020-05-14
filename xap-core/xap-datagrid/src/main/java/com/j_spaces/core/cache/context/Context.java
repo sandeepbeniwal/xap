@@ -250,6 +250,8 @@ public class Context {
 
     private  boolean _inMemoryRecovery;
 
+    private IndexMetricsContext indexMetricsContext;
+
     public Context() {
     }
 
@@ -1239,5 +1241,13 @@ public class Context {
 
     public void setInMemoryRecovery(boolean inMemoryRecovery) {
         this._inMemoryRecovery = inMemoryRecovery;
+    }
+
+    public IndexMetricsContext getIndexMetricsContext() {
+        return indexMetricsContext;
+    }
+
+    public void setIndexMetricsContext(IndexMetricsContext indexMetricsContext) {
+        this.indexMetricsContext = indexMetricsContext;
     }
 }
